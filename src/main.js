@@ -7,7 +7,7 @@ import store from './store'
 
 axios.defaults.baseURL = 'https://vue-axios-78ada.firebaseio.com'
 //set header to every request by using common
-axios.defaults.headers.common['Authorization'] = 'token123'
+//axios.defaults.headers.common['Authorization'] = 'token123'
 //set header to every get request
 axios.defaults.headers.get['Accepts'] = 'application/json'
 

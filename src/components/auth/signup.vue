@@ -70,7 +70,7 @@
 
 <script>
 //import axios from 'axios'
-import axios from '../../axios-auth'
+//import axios from '../../axios-auth'
   export default {
     data () {
       return {
@@ -105,9 +105,8 @@ import axios from '../../axios-auth'
           terms: this.terms
         }
 		//console.log(formData)
-		axios.post('https://vue-axios-78ada.firebaseio.com/users.json', formData)
-		.then(res => console.log(res))
-		.catch(error => console.log(error))
+		// this.$store.dispatch('signup', {email: formData.email, password: formData.password})
+		this.$store.dispatch('signup', formData)
       }
     }
   }
