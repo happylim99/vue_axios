@@ -2,25 +2,44 @@
   <div id="signup">
     <div class="signup-form">
       <form @submit.prevent="onSubmit">
-        <div class="input">
+        <div class="input" :class="{invalid: $v.email.$error}">
           <label for="email">Mail</label>
+		  <!--
           <input
                   type="email"
                   id="email"
-                  v-model="email">
-        </div>
-        <div class="input">
+				   @input="$v.email.$touch()"
+                  v-model="email"
+			>
+			-->
+			
+			<input
+                  type="email"
+                  id="email"
+					@blur="$v.email.$touch()"
+                  v-model="email"
+			>
+			</div>
+			<p>{{ this.email }}</p>
+			<!-- <div v-if="$v.email.$error">Please provide a valid email address</div> -->
+			<div v-if="!$v.email.email">Please provide a valid email address</div>
+			<div v-if="!$v.email.required">Email must not be empty</div>
+        <div class="input" :class="{invalid: $v.age.$error}">
           <label for="age">Your Age</label>
           <input
                   type="number"
                   id="age"
+				  @blur="$v.age.$touch()"
                   v-model.number="age">
         </div>
-        <div class="input">
+		<div v-if="!$v.age.minVal">{{ $v.age.$params.minVal.min }} +</div>
+
+        <div class="input" :class="{invalid: $v.password.$error}">
           <label for="password">Password</label>
           <input
                   type="password"
                   id="password"
+				  @blur="$v.password.$touch()"
                   v-model="password">
         </div>
         <div class="input">
@@ -42,26 +61,33 @@
         <div class="hobbies">
           <h3>Add some Hobbies</h3>
           <button @click="onAddHobby" type="button">Add Hobby</button>
+		  <p>You have to specify at least {{ $v.hobbyInputs }} hobbies.</p>
           <div class="hobby-list">
             <div
                     class="input"
-                    v-for="(hobbyInput, index) in hobbyInputs"
+                    v-for="(hobbyInput, index) in hobbyInputs" 
+					:class="{invalid: $v.hobbyInputs.$each[index].$error}"
                     :key="hobbyInput.id">
               <label :for="hobbyInput.id">Hobby #{{ index }}</label>
               <input
                       type="text"
                       :id="hobbyInput.id"
+					  @blur="$v.hobbyInputs.$each[index].value.$touch()"
                       v-model="hobbyInput.value">
               <button @click="onDeleteHobby(hobbyInput.id)" type="button">X</button>
-            </div>
+            
+			
+			<p v-if="$v.hobbyInputs.$each.$invalid">Please enter at least {{ $v.hobbyInputs.$each[0].value.$params.minLen.min }} characters</p>
+			</div>
           </div>
         </div>
-        <div class="input inline">
-          <input type="checkbox" id="terms" v-model="terms">
+        <div class="input inline" :class="{invalid: $v.terms.$invalid}">
+          <input type="checkbox" id="terms" @change="$v.terms.$touch()" v-model="terms">
           <label for="terms">Accept Terms of Use</label>
+		  <div>{{ $v.terms }}</div>
         </div>
         <div class="submit">
-          <button type="submit">Submit</button>
+          <button type="submit" :disabled="$v.$invalid">Submit</button>
         </div>
       </form>
     </div>
@@ -69,7 +95,8 @@
 </template>
 
 <script>
-//import axios from 'axios'
+import { required, email, numeric, minValue, minLength, sameAs, requiredUnless } from 'vuelidate/lib/validators'
+import axios from 'axios'
 //import axios from '../../axios-auth'
   export default {
     data () {
@@ -82,7 +109,68 @@
         hobbyInputs: [],
         terms: false
       }
-    },
+	},
+	//this is provide by vuelidate
+	validations: {
+		email: {
+			required,
+			email,
+			/*
+			unique1: val => {
+				return val !== 'test@test.com'
+			}
+			*/
+			unique: val => {
+				if(val === '') return true
+				var emailEncoded = encodeURIComponent(val);
+				return axios.get('./users.json?orderBy="email"&equalTo="' + emailEncoded + '"')
+				.then(res => {
+					console.log(res)
+					return Object.keys(res.data).length === 0
+				})
+				.catch(error => {
+					console.log(error)
+				})
+			}
+		},
+		age: {
+			required,
+			numeric,
+			minVal: minValue(18)
+		},
+		password: {
+			required,
+			minLen: minLength(8)
+		},
+		confirmPassword: {
+			sameAs: sameAs('password')
+			/*
+			sameAs: sameAs(vm => {
+				return vm.password + 'b'
+			})
+			*/
+		},
+		terms: {
+			checked(val) {
+				return this.country === 'germany' ? true : val
+			},
+			/*
+			required: requiredUnless(vm => {
+			return vm.country === 'germany'
+			})
+			*/
+		},
+		hobbyInputs: {
+			minLen: minLength(1),
+			$each: {
+				value: {
+					required,
+					minLen: minLength(5)
+				}
+			}
+		}
+		
+	},
     methods: {
       onAddHobby () {
         const newHobby = {
@@ -113,6 +201,13 @@
 </script>
 
 <style scoped>
+.input.invalid input {
+	border: 1px solid red;
+	background-color: #ffc9aa;
+}
+.input.invalid label {
+	color:red;
+}
   .signup-form {
     width: 400px;
     margin: 30px auto;
